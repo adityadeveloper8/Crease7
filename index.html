@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Crease – Free Cricket Predictor</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@400;600;800&display=swap">
+<style>
+:root{--bg:#eef2e4;--card:#fbfcf6;--ink:#152238;--mute:#5d6b5a;--red:#b3261e;--ok:#2e7d4f;--line:#d3dcc2;--tan:#e6cf9f;
+box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#111a14;--card:#1a261e;--ink:#eaf0e2;--mute:#9aac97;--red:#ef6a5f;--ok:#63c58a;--line:#2b3b30;--tan:#5b4d2c}}
+:root[data-theme="dark"]{--bg:#111a14;--card:#1a261e;--ink:#eaf0e2;--mute:#9aac97;--red:#ef6a5f;--ok:#63c58a;--line:#2b3b30;--tan:#5b4d2c}
+*{box-sizing:border-box}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:"Bricolage Grotesque",system-ui,sans-serif;line-height:1.4}
+main{max-width:520px;margin:0 auto;padding:16px}
+h1{font-size:2rem;font-weight:800;margin:0;letter-spacing:-.02em}
+.top{display:flex;justify-content:space-between;align-items:flex-end;margin-bottom:14px}
+.pts{text-align:right}.pts b{font-size:2.4rem;font-weight:800;line-height:1;display:block}
+.pts span,.sub{color:var(--mute);font-size:.85rem}
+.tabs{display:flex;gap:8px;margin-bottom:14px}
+.tabs button{flex:1;padding:10px;border:1.5px solid var(--ink);background:none;color:var(--ink);font:600 1rem inherit;font-family:inherit;border-radius:999px}
+.tabs button.on{background:var(--ink);color:var(--bg)}
+.card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:14px;margin-bottom:12px}
+.meta{display:flex;justify-content:space-between;color:var(--mute);font-size:.85rem;margin-bottom:10px}
+.teams{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.team{padding:14px 8px;border:2px solid var(--line);border-radius:10px;background:none;color:var(--ink);font:700 1.05rem inherit;font-family:inherit;text-align:center}
+.team small{display:block;font-weight:400;color:var(--mute);font-size:.78rem;margin-top:2px}
+.team.pick{border-color:var(--ink);background:var(--tan)}
+.team.win{border-color:var(--ok)}
+.team:focus-visible,.tabs button:focus-visible,.go:focus-visible,input:focus-visible{outline:3px solid var(--red);outline-offset:2px}
+.foot{margin-top:10px;display:flex;justify-content:space-between;align-items:center;font-size:.9rem;gap:8px}
+.go{border:none;background:var(--red);color:#fff;font:600 .9rem inherit;font-family:inherit;padding:8px 14px;border-radius:999px}
+.res{font-weight:600}.res.good{color:var(--ok)}.res.bad{color:var(--red)}
+.row{display:flex;align-items:center;gap:12px;padding:12px 4px;border-bottom:1px solid var(--line)}
+.row:last-child{border:none}.row .rk{width:1.6rem;font-weight:800;color:var(--mute)}.row .nm{flex:1;font-weight:600}.row .sc{font-weight:800}
+.row.me{background:var(--tan);border-radius:10px;padding-left:10px;padding-right:10px}
+.join{margin-top:20vh;text-align:center}
+.join p{color:var(--mute)}
+input{width:100%;padding:12px;font:1rem inherit;font-family:inherit;border:1.5px solid var(--ink);border-radius:10px;background:var(--card);color:var(--ink);margin:12px 0}
+.hide{display:none}
+.live{color:var(--red);font-weight:800}
+.ad{border:1.5px dashed var(--line);border-radius:10px;padding:18px;text-align:center;color:var(--mute);font-size:.85rem;margin-bottom:12px}
+.prize{background:var(--ink);color:var(--bg);border-radius:14px;padding:16px;margin-bottom:12px}
+.prize h2{margin:0 0 6px;font-size:1.3rem}.prize p{margin:4px 0;opacity:.85;font-size:.9rem}
+.code{font-size:1.6rem;font-weight:800;letter-spacing:.12em;text-align:center;padding:8px;border:1.5px solid var(--ink);border-radius:10px;margin:8px 0}
+</style>
+</head>
+<body>
+<main>
+  <section id="join" class="join">
+    <h1>Crease</h1>
+    <p>Pick the winner before the first ball. Earn points. Climb the table.</p>
+    <input id="name" placeholder="Your name" maxlength="16" aria-label="Your name">
+    <button class="go" id="start" style="width:100%;padding:12px">Start predicting</button>
+  </section>
+
+  <section id="app" class="hide">
+    <div class="top">
+      <div><h1>Crease</h1><span class="sub" id="hello"></span></div>
+      <div class="pts"><b id="score">0</b><span>your points</span></div>
+    </div>
+    <div class="tabs" role="tablist">
+      <button class="on" id="tm">Matches</button>
+      <button id="tl">Leaderboard</button>
+      <button id="tp">Prizes</button>
+    </div>
+    <div id="matches"></div>
+    <div id="board" class="card hide"></div>
+    <div id="prizes" class="hide">
+      <div class="prize"><h2>Weekly sponsor prizes</h2>
+        <p>Top 3 on the Sunday leaderboard win gift cards from our sponsors.</p>
+        <p>Entry is free. No deposits, no stakes.</p></div>
+      <div class="card"><b>Your league</b><div class="sub">Share this code so friends can join and compete privately.</div>
+        <div class="code" id="code"></div></div>
+      <div class="ad">Ad space: your banner or video ad goes here</div>
+    </div>
+    <p class="sub">Correct pick: 10 points. Free to play. No deposits or stakes.</p>
+  </section>
+</main>
+
+<script>
+var matches=[
+ {id:1,a:"India",b:"Australia",fmt:"T20",live:"LIVE",when:"IND 142/3 (16.2 ov)",fav:"a",winner:null},
+ {id:2,a:"England",b:"South Africa",fmt:"ODI",when:"Tomorrow 2:30 PM",fav:"b",winner:null},
+ {id:3,a:"Pakistan",b:"New Zealand",fmt:"T20",when:"Sat 6:30 PM",fav:"a",winner:null},
+ {id:4,a:"Sri Lanka",b:"West Indies",fmt:"ODI",when:"Sun 10:00 AM",fav:"b",winner:null}
+];
+var demo=true;
+var picks={},me="",others=[{n:"Arjun",s:35},{n:"Maya",s:30},{n:"Tom",s:20},{n:"Sana",s:15},{n:"Lewis",s:5}];
+var $=function(i){return document.getElementById(i)};
+
+function pointsFor(m){
+  if(!m.winner||!picks[m.id])return null;
+  if(picks[m.id]!==m.winner)return 0;
+  return 10+(m.fav&&m.fav!==m.winner?5:0);
+}
+function total(){return matches.reduce(function(t,m){return t+(pointsFor(m)||0)},0)}
+
+function render(){
+  $("score").textContent=total();
+  var html="";
+  matches.forEach(function(m){
+    var p=pointsFor(m),locked=!!m.winner||!!m.started;
+    function btn(side){
+      var cls="team"+(picks[m.id]===side?" pick":"")+(m.winner===side?" win":"");
+      var tag=m.fav?(m.fav===side?"Favourite":"Underdog"):"";
+      return '<button class="'+cls+'" data-m="'+m.id+'" data-s="'+side+'"'+(locked?" disabled":"")+'>'+m[side]+'<small>'+tag+'</small></button>';
+    }
+    var foot;
+    if(m.winner){
+      foot='<span class="res '+(p>0?"good":"bad")+'">'+(!picks[m.id]?"No pick made":p>0?"Correct: +"+p+" points":"Wrong pick: 0 points")+'</span><span class="sub">'+m[m.winner]+' won</span>';
+    }else if(m.started){
+      foot='<span class="sub">'+(picks[m.id]?"You picked "+m[picks[m.id]]:"Predictions closed")+'</span><span class="live">Match in progress</span>';
+    }else{
+      foot='<span class="sub">'+(picks[m.id]?"You picked "+m[picks[m.id]]:"Tap a team to pick")+'</span>'+(demo?'<button class="go" data-play="'+m.id+'">Play result</button>':'')+'';
+    }
+    html+='<div class="card"><div class="meta"><span>'+m.fmt+(m.live&&!m.winner?' <span class="live">\u25cf '+m.live+'</span>':'')+'</span><span>'+m.when+'</span></div><div class="teams">'+btn("a")+btn("b")+'</div><div class="foot">'+foot+'</div></div>';
+  });
+  $("matches").innerHTML=html;
+
+  var rows=others.concat([{n:me,s:total(),me:true}]).sort(function(x,y){return y.s-x.s});
+  $("board").innerHTML=rows.map(function(r,i){
+    return '<div class="row'+(r.me?" me":"")+'"><span class="rk">'+(i+1)+'</span><span class="nm">'+r.n+(r.me?" (you)":"")+'</span><span class="sc">'+r.s+'</span></div>';
+  }).join("");
+}
+
+$("start").onclick=function(){
+  var v=$("name").value.trim();
+  if(!v){$("name").focus();return}
+  me=v;save();$("code").textContent=v.slice(0,3).toUpperCase().replace(/[^A-Z]/g,"X")+Math.floor(100+Math.random()*900);$("hello").textContent="Hi, "+me;
+  $("join").classList.add("hide");$("app").classList.remove("hide");render();load();
+};
+$("matches").onclick=function(e){
+  var t=e.target.closest("button");if(!t)return;
+  if(t.dataset.s){picks[t.dataset.m]=t.dataset.s;save();render()}
+  if(t.dataset.play){
+    var m=matches.filter(function(x){return x.id==t.dataset.play})[0];
+    m.winner=Math.random()<0.6?m.fav:(m.fav==="a"?"b":"a");
+    render();
+  }
+};
+function save(){try{localStorage.setItem("crease",JSON.stringify({me:me,picks:picks}))}catch(e){}}
+try{var d=JSON.parse(localStorage.getItem("crease")||"null");if(d&&d.me){$("name").value=d.me;picks=d.picks||{}}}catch(e){}
+function load(){
+  fetch("/api/matches").then(function(r){if(!r.ok)throw 0;return r.json()}).then(function(j){
+    var list=(j.data||[]).filter(function(x){return x.teams&&x.teams.length===2}).slice(0,12).map(function(x){
+      var w=null,st=x.status||"";
+      if(x.matchEnded){if(st.indexOf(x.teams[0]+" won")===0)w="a";else if(st.indexOf(x.teams[1]+" won")===0)w="b"}
+      var sc=(x.score||[]).map(function(q){return q.r+"/"+q.w+" ("+q.o+")"}).join(" | ");
+      return {id:x.id,a:x.teams[0],b:x.teams[1],fmt:(x.matchType||"").toUpperCase(),live:(x.matchStarted&&!x.matchEnded)?"LIVE":null,started:!!x.matchStarted,when:sc||st,fav:null,winner:w};
+    });
+    if(list.length){matches=list;demo=false}
+    render();
+  }).catch(function(){render()});
+}
+function tab(n){
+  var ids=["matches","board","prizes"],bt=["tm","tl","tp"];
+  ids.forEach(function(id,i){$(id).classList.toggle("hide",i!==n);$(bt[i]).classList.toggle("on",i===n)});
+}
+$("tm").onclick=function(){tab(0)};$("tl").onclick=function(){tab(1)};$("tp").onclick=function(){tab(2)};
+</script>
+</body>
+</html>
