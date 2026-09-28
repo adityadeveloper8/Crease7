@@ -21,6 +21,9 @@ h1{font-size:2rem;font-weight:800;margin:0;letter-spacing:-.02em}
 .tabs{display:flex;gap:8px;margin-bottom:14px}
 .tabs button{flex:1;padding:10px;border:1.5px solid var(--ink);background:none;color:var(--ink);font:600 1rem inherit;font-family:inherit;border-radius:999px}
 .tabs button.on{background:var(--ink);color:var(--bg)}
+.chips{display:flex;gap:8px;margin-bottom:12px}
+.chips button{padding:6px 14px;border:1.5px solid var(--line);background:none;color:var(--ink);font:600 .9rem inherit;font-family:inherit;border-radius:999px}
+.chips button.on{border-color:var(--ink);background:var(--tan)}
 .card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:14px;margin-bottom:12px}
 .meta{display:flex;justify-content:space-between;color:var(--mute);font-size:.85rem;margin-bottom:10px}
 .teams{display:grid;grid-template-columns:1fr 1fr;gap:10px}
@@ -28,7 +31,7 @@ h1{font-size:2rem;font-weight:800;margin:0;letter-spacing:-.02em}
 .team small{display:block;font-weight:400;color:var(--mute);font-size:.78rem;margin-top:2px}
 .team.pick{border-color:var(--ink);background:var(--tan)}
 .team.win{border-color:var(--ok)}
-.team:focus-visible,.tabs button:focus-visible,.go:focus-visible,input:focus-visible{outline:3px solid var(--red);outline-offset:2px}
+.team:focus-visible,.tabs button:focus-visible,.chips button:focus-visible,.go:focus-visible,input:focus-visible{outline:3px solid var(--red);outline-offset:2px}
 .foot{margin-top:10px;display:flex;justify-content:space-between;align-items:center;font-size:.9rem;gap:8px}
 .go{border:none;background:var(--red);color:#fff;font:600 .9rem inherit;font-family:inherit;padding:8px 14px;border-radius:999px}
 .res{font-weight:600}.res.good{color:var(--ok)}.res.bad{color:var(--red)}
@@ -65,6 +68,11 @@ input{width:100%;padding:12px;font:1rem inherit;font-family:inherit;border:1.5px
       <button id="tl">Leaderboard</button>
       <button id="tp">Prizes</button>
     </div>
+    <div class="chips" id="flt">
+      <button class="on" data-f="all">All</button>
+      <button data-f="india">India</button>
+      <button data-f="world">World</button>
+    </div>
     <div id="matches"></div>
     <div id="board" class="card hide"></div>
     <div id="prizes" class="hide">
@@ -81,12 +89,12 @@ input{width:100%;padding:12px;font:1rem inherit;font-family:inherit;border:1.5px
 
 <script>
 var matches=[
- {id:1,a:"India",b:"Australia",fmt:"T20",live:"LIVE",when:"IND 142/3 (16.2 ov)",fav:"a",winner:null},
- {id:2,a:"England",b:"South Africa",fmt:"ODI",when:"Tomorrow 2:30 PM",fav:"b",winner:null},
- {id:3,a:"Pakistan",b:"New Zealand",fmt:"T20",when:"Sat 6:30 PM",fav:"a",winner:null},
- {id:4,a:"Sri Lanka",b:"West Indies",fmt:"ODI",when:"Sun 10:00 AM",fav:"b",winner:null}
+ {id:1,a:"India",b:"Australia",fmt:"T20",live:"LIVE",when:"IND 142/3 (16.2 ov)",fav:"a",winner:null,region:"india"},
+ {id:2,a:"England",b:"South Africa",fmt:"ODI",when:"Tomorrow 2:30 PM",fav:"b",winner:null,region:"world"},
+ {id:3,a:"Pakistan",b:"New Zealand",fmt:"T20",when:"Sat 6:30 PM",fav:"a",winner:null,region:"world"},
+ {id:4,a:"Sri Lanka",b:"West Indies",fmt:"ODI",when:"Sun 10:00 AM",fav:"b",winner:null,region:"world"}
 ];
-var demo=true;
+var demo=true,filt="all";
 var picks={},me="",others=[{n:"Arjun",s:35},{n:"Maya",s:30},{n:"Tom",s:20},{n:"Sana",s:15},{n:"Lewis",s:5}];
 var $=function(i){return document.getElementById(i)};
 
@@ -100,7 +108,9 @@ function total(){return matches.reduce(function(t,m){return t+(pointsFor(m)||0)}
 function render(){
   $("score").textContent=total();
   var html="";
-  matches.forEach(function(m){
+  var shown=matches.filter(function(m){return filt==="all"||m.region===filt});
+  if(!shown.length)html='<div class="card sub">No matches here right now. Check back soon.</div>';
+  shown.forEach(function(m){
     var p=pointsFor(m),locked=!!m.winner||!!m.started;
     function btn(side){
       var cls="team"+(picks[m.id]===side?" pick":"")+(m.winner===side?" win":"");
@@ -131,6 +141,12 @@ $("start").onclick=function(){
   me=v;save();$("code").textContent=v.slice(0,3).toUpperCase().replace(/[^A-Z]/g,"X")+Math.floor(100+Math.random()*900);$("hello").textContent="Hi, "+me;
   $("join").classList.add("hide");$("app").classList.remove("hide");render();load();
 };
+$("flt").onclick=function(e){
+  var t=e.target.closest("button");if(!t)return;
+  filt=t.dataset.f;
+  Array.prototype.forEach.call($("flt").children,function(b){b.classList.toggle("on",b===t)});
+  render();
+};
 $("matches").onclick=function(e){
   var t=e.target.closest("button");if(!t)return;
   if(t.dataset.s){picks[t.dataset.m]=t.dataset.s;save();render()}
@@ -144,11 +160,11 @@ function save(){try{localStorage.setItem("crease",JSON.stringify({me:me,picks:pi
 try{var d=JSON.parse(localStorage.getItem("crease")||"null");if(d&&d.me){$("name").value=d.me;picks=d.picks||{}}}catch(e){}
 function load(){
   fetch("/api/matches").then(function(r){if(!r.ok)throw 0;return r.json()}).then(function(j){
-    var list=(j.data||[]).filter(function(x){return x.teams&&x.teams.length===2}).slice(0,12).map(function(x){
+    var list=(j.data||[]).filter(function(x){return x.teams&&x.teams.length===2}).slice(0,45).map(function(x){
       var w=null,st=x.status||"";
       if(x.matchEnded){if(st.indexOf(x.teams[0]+" won")===0)w="a";else if(st.indexOf(x.teams[1]+" won")===0)w="b"}
       var sc=(x.score||[]).map(function(q){return q.r+"/"+q.w+" ("+q.o+")"}).join(" | ");
-      return {id:x.id,a:x.teams[0],b:x.teams[1],fmt:(x.matchType||"").toUpperCase(),live:(x.matchStarted&&!x.matchEnded)?"LIVE":null,started:!!x.matchStarted,when:sc||st,fav:null,winner:w};
+      return {id:x.id,a:x.teams[0],b:x.teams[1],fmt:(x.matchType||"").toUpperCase(),live:(x.matchStarted&&!x.matchEnded)?"LIVE":null,started:!!x.matchStarted,when:sc||st,fav:null,winner:w,region:x.region||"world"};
     });
     if(list.length){matches=list;demo=false}
     render();
@@ -157,6 +173,7 @@ function load(){
 function tab(n){
   var ids=["matches","board","prizes"],bt=["tm","tl","tp"];
   ids.forEach(function(id,i){$(id).classList.toggle("hide",i!==n);$(bt[i]).classList.toggle("on",i===n)});
+  $("flt").classList.toggle("hide",n!==0);
 }
 $("tm").onclick=function(){tab(0)};$("tl").onclick=function(){tab(1)};$("tp").onclick=function(){tab(2)};
 </script>
